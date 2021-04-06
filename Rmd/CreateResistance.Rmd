@@ -1,0 +1,95 @@
+---
+title: "CreateResistance"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(raster)
+library(sf)
+# rm(list=ls())
+lc <- raster("../Circuitscape/CS_Output/landcover90.tif")
+roi <- read_sf("../Circuitscape/CS_Input/ROI/roi.shp") %>% 
+  st_transform(.,crs(lc))
+```
+
+## Reclassify raster layers to resistance values from 1-1000
+```{r nlcd_landcover}
+
+lc <- raster("../Circuitscape/CS_Output/landcover90.tif")
+# lc <- crop(lc,extent(roi))
+lc_mat <- c(-Inf,1,-9999,
+  10.5,11.5,1000, # open water
+            11.5,12.5,1, # snow
+            20.5,21.5,100, # open space
+            21.5,22.5,200, # low intensity dev.
+            22.5,23.5,500, # med intensity dev
+            23.5,24.5,100, # high intensity dev
+            30,40,1, # Barren land
+            40,50,1, # forest
+            50,60,10, # scrub
+            70,80,500, # grassland
+            80,89,500, # cultivated ag
+            89,96,500)  # wetlands
+
+lc_rcl <- reclassify(lc,lc_mat)
+writeRaster(lc_rcl,"../Circuitscape/CS_Output/lc_resistance.tif",overwrite=T)
+
+```
+
+```{r nlcd_imp}
+
+imp <- raster("../Circuitscape/CS_Output/imperviousness90.tif")
+# imp <- crop(imp,extent(roi))
+# plot(imp)
+imp_rcl <- imp^1.5
+writeRaster(imp_rcl,"../Circuitscape/CS_Output/imp_resistance.tif",overwrite=T)
+
+```
+
+```{r roads}
+
+highways <- raster("../Circuitscape/CS_Output/roads/highways.tif") 
+# freq(highways)
+hwy_rcl <- reclassify(highways,c(0,2,800))
+extent(hwy_rcl)
+
+roads <- raster("../Circuitscape/CS_Output/roads/major_roads.tif") 
+# freq(roads)
+roads_rcl <- reclassify(roads,c(0,2,500))
+extent(roads_rcl)
+
+nhs <- raster("../Circuitscape/CS_Output/roads/nhs.tif") 
+nhs_rcl <- reclassify(nhs,c(0,2,900))
+extent(nhs_rcl)
+```
+
+```{r stack}
+res_stack <- stack(lc_rcl,imp_rcl, hwy_rcl,roads_rcl,nhs_rcl)
+resistance <- max(res_stack,na.rm = T)
+plot(resistance)
+
+resistance[resistance==0]=-9999
+crs(resistance)<-crs(lc)
+res(resistance) <- 90
+writeRaster(resistance,"../Circuitscape/resistance.tif",overwrite=T)
+writeRaster(resistance,"../Circuitscape/circuitscapeInput/resistance.asc",format='ascii',overwrite=T)
+
+```
+
+
+```{r}
+hab <- read_sf("../Circuitscape/CS_Output/CO_habitat/seg_habitat.shp") %>% 
+  st_transform(.,crs(resistance)) %>% 
+  as(.,"Spatial")
+
+writeOGR(hab,
+         dsn="../Circuitscape/circuitscapeInput/",
+         layer = "seg_hab_reproj",
+         driver = "ESRI Shapefile")
+```
+
+
