@@ -60,6 +60,16 @@ for(i in 1:length(raster_list)){
 rm(ras,corridors,corridors_rpj,pinchpoints,pinchpoints_rpj,resistance,resistance_rpj)
 ```
 
+```{r fill.raster.na}
+fill.na <- function(x, i=5) {
+  if(is.na(x)[i]) {
+    return(round(mean(x, na.rm=TRUE),6))
+  } else {
+    return(round(x[i],6))
+  }
+}
+```
+
 
 ```{r pinchpoint1}
 # Create list of rasters
@@ -84,7 +94,14 @@ for(i in 1:length(pinchpoint_list)) {
     tmp_ras <- raster_list2[[j]]
 
     tmp_mask <- mask(crop(tmp_ras,extent(tmp_pp)),tmp_pp)
-
+    
+    # Fill in NA values for resistance and pinchpoint rasters
+    if(ras_name != "corridors"){
+      while(sum(is.na(tmp_mask[]))>0){
+        tmp_mask <- focal(tmp_mask, w = matrix(1,3,3), fun = fill.na, 
+              pad = TRUE, na.rm = FALSE )
+      }
+    }
     assign(paste0(pp_name,"_",ras_name),tmp_mask)
     
     output_tif <- paste0("../GoatRepo/NetLogoInput/",pp_name,"_",ras_name,".tif")
