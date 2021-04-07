@@ -16,43 +16,90 @@ library(sf)
 ```
 
 ```{r data}
+
+# NetLogo friendly projection
 new_crs <- "+proj=aea +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+
+# Read in polygons that we'll use to crop rasters to focal pinchpoints and reproject
 pp1_shp <- read_sf("../Circuitscape/pinchpointcroppolys/pinchpoint1.shp") %>% 
   st_transform(new_crs)
+
 pp2_shp <- read_sf("../Circuitscape/pinchpointcroppolys/pinchpoint2.shp") %>% 
   st_transform(new_crs)
 
+# Read in rasters
 corridors <- raster("../Circuitscape/pinchpointoutput/addI70_corridors_truncated_at_10k1.tif")
-corridors_rpj <- projectRaster(from = corridors,crs=new_crs)
-
 pinchpoints <- raster("../Circuitscape/pinchpointoutput/addI70_current_adjacentPairs_10k1.tif")
-pinchpoints_rpj <- projectRaster(from = pinchpoints,crs=new_crs)
+resistance <- raster("../Circuitscape/circuitscapeInput/resistance.tif")
 
-resistance <- raster("../Circuitscape/resistance.tif")
+# Reproject rasters to new crs
+corridors_rpj <- projectRaster(from = corridors,crs=new_crs)
+pinchpoints_rpj <- projectRaster(from = pinchpoints,crs=new_crs)
 resistance_rpj <- projectRaster(from=resistance,crs=new_crs)
+
+# Put rasters in a list to make for loop easy
+raster_list <- list(corridors=corridors_rpj,
+                    pinchpoints=pinchpoints_rpj,
+                    resistance=resistance_rpj)
+
+# Create blank raster template to resample rasters to higher resoluion (90m to 30m)
+ras <- raster()
+extent(ras) <- extent(pinchpoints_rpj)
+res(ras) <- 30
+crs(ras)<-new_crs
+
+for(i in 1:length(raster_list)){
+  
+  rasi <- raster_list[[i]]
+  tmp <- crop(rasi,extent(ras)) %>% resample(.,ras)
+  assign(paste0(names(raster_list[i]),"_resample"),tmp)
+  rm(tmp,rasi)
+  
+}
+
+rm(ras,corridors,corridors_rpj,pinchpoints,pinchpoints_rpj,resistance,resistance_rpj)
 ```
 
 
 ```{r pinchpoint1}
-pp1_corrs_mask <- mask(crop(corridors_rpj,extent(pp1_shp)),pp1_shp)
-writeRaster(pp1_corrs_mask,"../GoatRepo/NetLogoInput/pp1_corridors.tif",overwrite=T)
+# Create list of rasters
+raster_list2 <- list(corridors=corridors_resample,
+                    pinchpoints=pinchpoints_resample,
+                    resistance=resistance_resample)
 
-pp1_pp_mask <- mask(crop(pinchpoints_rpj,extent(pp1_shp)),pp1_shp)
-writeRaster(pp1_pp_mask,"../GoatRepo/NetLogoInput/pp1_pinchpoints.tif",overwrite=T)
+# Create list of pinchpoints
+pinchpoint_list  <- list(pp1=pp1_shp,
+                         pp2=pp2_shp)
 
-pp1_res_mask <- mask(crop(resistance_rpj,extent(pp1_shp)),pp1_shp)
-writeRaster(pp1_res_mask,"../GoatRepo/NetLogoInput/pp1_resistance.tif",overwrite=T)
+# Pinchpoint loop
+for(i in 1:length(pinchpoint_list)) {
+  
+  pp_name <- names(pinchpoint_list[i])
+  tmp_pp <- pinchpoint_list[[i]]
+  
+  # Raster loop
+  for(j in 1:length(raster_list2)){
+    
+    ras_name <- names(raster_list2[j])
+    tmp_ras <- raster_list2[[j]]
+
+    tmp_mask <- mask(crop(tmp_ras,extent(tmp_pp)),tmp_pp)
+
+    assign(paste0(pp_name,"_",ras_name),tmp_mask)
+    
+    output_tif <- paste0("../GoatRepo/NetLogoInput/",pp_name,"_",ras_name,".tif")
+    output_asc <- paste0("../GoatRepo/NetLogoInput/",pp_name,"_",ras_name,".asc")
+    writeRaster(tmp_mask,output_tif,overwrite=T)
+    writeRaster(tmp_mask,output_asc,overwrite=T,format='ascii')
+
+    }
+  
+  rm(pp_name,tmp_pp,ras_name,tmp_ras,tmp_mask,output_asc,output_tif)
+}
 
 
-pp2_corrs_mask <- mask(crop(corridors_rpj,extent(pp2_shp)),pp2_shp)
-writeRaster(pp2_corrs_mask,"../GoatRepo/NetLogoInput/pp2_corrs.tif",overwrite=T)
-
-pp2_pp_mask <- mask(crop(pinchpoints_rpj,extent(pp2_shp)),pp2_shp)
-writeRaster(pp2_pp_mask,"../GoatRepo/NetLogoInput/pp2_pinchpoints.tif",overwrite=T)
-
-pp2_res_mask <- mask(crop(resistance_rpj,extent(pp2_shp)),pp2_shp)
-writeRaster(pp2_res_mask,"../GoatRepo/NetLogoInput/pp2_resistance.tif",overwrite=T)
 ```
+
 
 
 
