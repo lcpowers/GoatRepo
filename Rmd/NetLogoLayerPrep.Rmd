@@ -118,5 +118,16 @@ for(i in 1:length(pinchpoint_list)) {
 ```
 
 
+```{r}
+pp1_asc <- raster("./NetLogoInput/pp1_pinchpoints.asc")
+pp1 <- pp1_asc*1000
+
+hist(pp1,breaks=20)
+plot(pp1)
+
+writeRaster(pp1,"./NetLogoInput/pp1_flow.asc",format="ascii")
+freq(pp1)
+```
+
 
 
