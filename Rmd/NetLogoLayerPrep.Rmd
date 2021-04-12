@@ -117,16 +117,33 @@ for(i in 1:length(pinchpoint_list)) {
 
 ```
 
+# Multiply flow/pinchpoint values by 1000 to help with NetLogo value recognition
+```{r fixFlowVals}
 
-```{r}
 pp1_asc <- raster("./NetLogoInput/pp1_pinchpoints.asc")
-pp1 <- pp1_asc*1000
+pp1 <- round(pp1_asc*1000,2)
+writeRaster(pp1,"./NetLogoInput/pp1_flow.asc",format="ascii",overwrite=T)
 
-hist(pp1,breaks=20)
-plot(pp1)
+pp2_asc <- raster("./NetLogoInput/pp2_pinchpoints.asc")
+pp2 <- round(pp2_asc*1000,2)
+writeRaster(pp2,"./NetLogoInput/pp2_flow.asc",format="ascii",overwrite=T)
 
-writeRaster(pp1,"./NetLogoInput/pp1_flow.asc",format="ascii")
-freq(pp1)
+```
+
+
+# Remove river from PP1
+```{r removepp1river}
+
+pp1res <- raster("./NetLogoInput/pp1_resistance.asc")
+plot(pp1res)
+hist(pp1res)
+
+pp1freq <- as.data.frame(freq(pp1res))
+
+pp1reclass <- reclassify(pp1res,
+                         rcl = c(50,600,20))
+
+writeRaster(pp1reclass,"./NetLogoInput/pp1_resistance_noriver.asc",format="ascii")
 ```
 
 
