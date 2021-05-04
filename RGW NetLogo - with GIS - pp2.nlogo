@@ -19,8 +19,8 @@ to setup
   set left_habitat 0
 
   ;; gis data
-  set resistance-data gis:load-dataset "repo/GoatRepo/NetLogoInput/pp3_resistance_90.asc"
-  set flow-data gis:load-dataset "repo/GoatRepo/NetLogoInput/pp3_90_flow.asc"
+  set resistance-data gis:load-dataset "NetLogoInput/pp3_resistance_90.asc"
+  set flow-data gis:load-dataset "NetLogoInput/pp3_90_flow.asc"
 
   ;; format world
   ask patches [ load_world ]
@@ -31,7 +31,7 @@ to setup
 end
 
 to go
-  if not any? goats or ticks > 700 [ stop ]
+  if not any? goats or ticks > 1000 [ stop ]
   if land_bridge = true [
     update_flow ]
   ask goats
@@ -87,12 +87,37 @@ to build_bridge
   ]
   ask (patch-set
       ;; fence to direct goats
-      patch 22 60 patch 23 60 patch 24 59 patch 25 59 patch 26 58 patch 27 58
-      patch 20 47 patch 21 57 patch 22 56 patch 23 56 patch 24 55 patch 25 55
-      patch 24 54 patch 23 53 patch 22 53 patch 22 52 patch 22 52
-      patch 27 59 patch 28 59 patch 28 60 patch 28 61 patch 29 61
-      patch 22 61 patch 22 61 patch 22 63 patch 23 63 patch 23 64
-      patch 20 57 patch 20 56 patch 19 56 patch 18 55 patch 18 54
+      ;; top side of bridge
+      patch 22 60 patch 23 60 patch 24 60
+      patch 24 59 patch 25 59 patch 26 59
+      patch 26 58 patch 27 58 ; patch 28 58
+
+      ;; NE fence
+      patch 27 59 patch 27 60 patch 27 61
+      patch 28 61 patch 28 62 patch 28 63
+      patch 29 63 patch 29 64
+      patch 30 64 patch 30 65
+
+      ;; bottom side of bridge
+      patch 20 57  patch 21 57 patch 22 57
+      patch 22 56 patch 23 56
+      patch 23 55 patch 24 55 ;; patch 25 55
+
+      ;; SW fence
+      patch 20 56 patch 20 55
+      patch 19 55 patch 19 54
+      patch 18 54 patch 18 53
+
+      ;; SE fence
+      patch 24 54 patch 24 53 patch 24 52
+      patch 23 52 patch 23 51 patch 23 50 patch 23 49
+      patch 22 49
+
+      ;; NW fence
+      patch 22 61 patch 22 62
+      patch 23 62 patch 23 63 patch 23 64
+      patch 24 64 patch 24 65
+
     ) [
       set pcolor 2
       set flow 0
@@ -153,8 +178,8 @@ to move  ;; goat procedure
       set heading ( -90 + random 60 )
         ;; becomes false quickly when temp is large -> loop terminates and sets on that heading
         while [ random 1000 + 1 > temp ][
-      rt random 50
-      lt random 50
+      rt random 60
+      lt random 60
       ifelse patch-ahead 1 = nobody [ set temp -1 ]
       [ set temp [ flow ] of patch-ahead 1 ]
       ] ] )
@@ -165,9 +190,18 @@ to move  ;; goat procedure
       move-to one-of link-neighbors
     ]
     )
+
+  ;; Track crossings with land bridge
   if ([pcolor] of patch-here = 74 and crossed = false and ticks > 10) [
     set crossings crossings + 1
     set crossed true]
+
+  ;; Track crossings without land bridge
+  if (sum [flow] of (patch-set patch-here neighbors) > 3025 and crossed = false and land_bridge = false) [
+    set crossings crossings + 1
+    set crossed true
+  ]
+
   ;; turtles leave habitat to the north
   if abs pycor = max-pycor or (abs pxcor = min-pxcor and pycor >= 65 ) [
     leave_habitat
@@ -225,7 +259,7 @@ GRAPHICS-WINDOW
 313
 13
 681
-542
+541
 -1
 -1
 4.094241
@@ -291,7 +325,7 @@ number
 number
 0.0
 50
-50.0
+10.0
 1.0
 1
 NIL
@@ -359,7 +393,7 @@ SWITCH
 225
 land_bridge
 land_bridge
-0
+1
 1
 -1000
 
@@ -696,7 +730,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.1.1
+NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
@@ -710,6 +744,27 @@ NetLogo 6.1.1
     <metric>deaths</metric>
     <metric>left_habitat</metric>
     <enumeratedValueSet variable="number">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="land_bridge">
+      <value value="false"/>
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="color_by">
+      <value value="2"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Apr28overnight" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>ticks</metric>
+    <metric>crossings</metric>
+    <metric>N</metric>
+    <metric>deaths</metric>
+    <metric>left_habitat</metric>
+    <enumeratedValueSet variable="number">
+      <value value="10"/>
+      <value value="30"/>
       <value value="50"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="land_bridge">
