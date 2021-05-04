@@ -19,8 +19,8 @@ to setup
   set left_habitat 0
 
   ;; gis data
-  set resistance-data gis:load-dataset "repo/GoatRepo/NetLogoInput/pp1_resistance_noriver.asc"
-  set flow-data gis:load-dataset "repo/GoatRepo/NetLogoInput/pp1_flow.asc"
+  set resistance-data gis:load-dataset "NetLogoInput/pp1_resistance_noriver.asc"
+  set flow-data gis:load-dataset "NetLogoInput/pp1_flow.asc"
 
   ;; format world
   ask patches [ load_world ]
@@ -691,7 +691,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.1.1
+NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
