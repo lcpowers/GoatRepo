@@ -1,0 +1,278 @@
+---
+title: "NetLogo Output Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+
+rm(list=ls())
+library(tidyverse)
+library(lme4)
+library(sjPlot)
+
+```
+
+# Read in NetLogo output table
+```{r getData}
+
+dat1_10 <- read_csv("./../NetLogoOut/pp1_final_runs_10.csv") %>% 
+  select(-ticks) %>% 
+  mutate(pinchpoint = 1,
+         run_number=run_number+1000)
+df <- as.data.frame(table(dat1_10$run_number)) %>% 
+  filter(Freq<5)
+badruns <- df$Var1 %>% as.character()
+dat1_10 <- filter(dat1_10,!(run_number%in%badruns))
+
+dat1_30 <- read_csv("./../NetLogoOut/pp1_final_runs_30.csv") %>% 
+  select(-ticks) %>% 
+  mutate(pinchpoint = 1,
+         run_number=run_number+2000)
+df <- as.data.frame(table(dat1_30$run_number)) %>% 
+  filter(Freq<5)
+badruns <- df$Var1 %>% as.character()
+dat1_30 <- filter(dat1_30,!(run_number%in%badruns))
+
+dat1_50 <- read_csv("./../NetLogoOut/pp1_final_runs_50.csv") %>% 
+  select(-ticks) %>% 
+  mutate(pinchpoint = 1,
+         run_number=run_number+3000) %>% 
+  unique()
+df <- as.data.frame(table(dat1_50$run_number)) %>% filter(Freq<5)
+badruns <- df$Var1 %>% as.character()
+dat1_50 <- filter(dat1_50,!(run_number%in%badruns))
+
+dat1 <- rbind(dat1_10,dat1_30,dat1_50)
+colnames(dat1) <- c("run_number","herd_number","land_bridge",
+                    "timestep","n_crossings","totalgoats",
+                    "deaths","left_habitat","pinchpoint")
+
+dat1$run_number <- dat1$run_number
+dat1$run_number <- as.factor(dat1$run_number)
+dat1$herd_number <- as.factor(dat1$herd_number)
+
+n_distinct(dat1$run_number)
+rm(dat1_10,dat1_30,dat1_50)
+
+dat2 <- read_csv("./../NetLogoOut/pp2_final_runs.csv") %>% 
+  select(-ticks) %>% 
+  mutate(pinchpoint = 2)%>% 
+  filter(step<=715)
+colnames(dat2) <- c("run_number","herd_number","land_bridge",
+                    "timestep","n_crossings","totalgoats",
+                    "deaths","left_habitat","pinchpoint") 
+
+dat2$run_number <- as.factor(dat2$run_number)
+dat2$herd_number <- as.factor(dat2$herd_number)
+# Aggregate data by settings to plot?
+
+dat_all <- rbind(dat1,dat2)
+
+dat_all$pinchpoint <- as.factor(dat_all$pinchpoint)
+dat_agg <- dat_all %>% 
+  group_by(herd_number,land_bridge,timestep,pinchpoint) %>% 
+  summarise(N = mean(totalgoats),
+            avg_cross = mean(n_crossings),
+            prop_cross = mean(n_crossings/totalgoats),
+            sd_prop_cross = sd(n_crossings/totalgoats),
+            prop_deaths = mean(deaths)/mean(totalgoats),
+            sd_prop_deaths = sd(deaths/totalgoats),
+            avg_death = mean(deaths),
+            avg_lhab = mean(left_habitat),
+            prop_lhab = mean(left_habitat)/mean(totalgoats),
+            sd_prop_lhab = sd(left_habitat/totalgoats),)
+
+```
+
+# Crossed Output plots
+```{r figures}
+
+colors = c("darkgrey","aquamarine4")
+leg_labels = c("Land bridge absent","Land bridge present")
+strip_labels <- c("10"="Initial # of herds = 10",
+                  "30"="30",
+                  "50"="50")
+
+ggplot(subset(dat_agg,pinchpoint==2), aes(x=timestep,y=prop_cross))+
+  geom_line(aes(color=land_bridge))+
+  geom_ribbon(aes(ymin=prop_cross-sd_prop_cross,
+                  ymax=prop_cross+sd_prop_cross,
+                  fill=land_bridge),alpha=0.25)+
+  facet_wrap(~herd_number,labeller = as_labeller(strip_labels))+
+  theme_bw(base_size = 18)+
+  labs(color="",fill="",x="Timestep",y="Proportion of goats crossed")+
+  scale_color_manual(values = colors,labels=leg_labels)+
+  scale_fill_manual(values = colors,labels=leg_labels)+
+  scale_x_continuous()+
+  theme(legend.text = element_text(size=18),
+        legend.position = "top",
+        #strip.background = element_blank(),
+        panel.grid = element_blank())
+
+ggsave("./FinalFigures/pp2_PropCrossedbyTimestep.png",dpi=300,width=10,height=6)
+
+ggplot(subset(dat_agg,pinchpoint==1), aes(x=timestep,y=prop_cross))+
+  geom_line(aes(color=land_bridge))+
+  geom_ribbon(aes(ymin=prop_cross-sd_prop_cross,
+                  ymax=prop_cross+sd_prop_cross,
+                  fill=land_bridge),alpha=0.25)+
+  facet_wrap(~herd_number,labeller = as_labeller(strip_labels))+
+  theme_bw(base_size = 18)+
+  labs(color="",fill="",x="Timestep",y="Proportion of goats crossed")+
+  scale_color_manual(values = colors,labels=leg_labels)+
+  scale_fill_manual(values = colors,labels=leg_labels)+
+  scale_x_continuous()+
+  theme(legend.text = element_text(size=18),
+        legend.position = "top",
+        #strip.background = element_blank(),
+        panel.grid = element_blank())
+
+ggsave("./FinalFigures/pp1_PropCrossedbyTimestep.png",dpi=300,width=10,height=6)
+```
+
+# death Output plots
+```{r deathfigures}
+
+colors = c("darkgrey","aquamarine4")
+leg_labels = c("Land bridge absent","Land bridge present")
+strip_labels <- c("10"="Initial # of herds = 10",
+                  "30"="30",
+                  "50"="50")
+names(dat_agg)
+ggplot(subset(dat_agg,pinchpoint==1), aes(x=timestep,y=prop_deaths))+
+  geom_line(aes(color=land_bridge),alpha=0.5)+
+  geom_ribbon(aes(ymin=prop_deaths-sd_prop_deaths,
+                  ymax=prop_deaths+sd_prop_deaths,
+                  fill=land_bridge),alpha=0.25)+
+  facet_wrap(~herd_number,labeller = as_labeller(strip_labels))+
+  theme_bw(base_size = 18)+
+  labs(color="",fill="",x="Timestep",y="Proportion of goats died")+
+  scale_color_manual(values = colors,labels=leg_labels)+
+  scale_fill_manual(values = colors,labels=leg_labels)+
+  scale_y_continuous(limits = c(-0.05,0.47))+
+  theme(legend.text = element_text(size=18),
+        legend.position = "top",
+        #strip.background = element_blank(),
+        panel.grid = element_blank())
+
+ggsave("./FinalFigures/pp1_PropDiedbyTimestep.png",dpi=300,width=10,height=6)
+
+ggplot(subset(dat_agg,pinchpoint==2), aes(x=timestep,y=prop_deaths))+
+  geom_line(aes(color=land_bridge),alpha=0.5)+
+  geom_ribbon(aes(ymin=prop_deaths-sd_prop_deaths,
+                  ymax=prop_deaths+sd_prop_deaths,
+                  fill=land_bridge),alpha=0.25)+
+  facet_wrap(~herd_number,labeller = as_labeller(strip_labels))+
+  theme_bw(base_size = 18)+
+  labs(color="",fill="",x="Timestep",y="Proportion of goats died")+
+  scale_color_manual(values = colors,labels=leg_labels)+
+  scale_fill_manual(values = colors,labels=leg_labels)+
+  scale_y_continuous(limits = c(-0.05,0.47))+
+  theme(legend.text = element_text(size=18),
+        legend.position = "top",
+        #strip.background = element_blank(),
+        panel.grid = element_blank())
+
+ggsave("./FinalFigures/pp2_PropDiedbyTimestep.png",dpi=300,width=10,height=6)
+
+
+```
+
+# lhab Output plots
+```{r lhabfigures}
+
+colors = c("darkgrey","aquamarine4")
+leg_labels = c("Land bridge absent","Land bridge present")
+strip_labels <- c("10"="Initial # of herds = 10",
+                  "30"="30",
+                  "50"="50")
+names(dat_agg)
+ggplot(subset(dat_agg,pinchpoint==1), aes(x=timestep,y=prop_lhab))+
+  geom_line(aes(color=land_bridge),alpha=0.5)+
+  geom_ribbon(aes(ymin=prop_lhab-sd_prop_lhab,
+                  ymax=prop_lhab+sd_prop_lhab,
+                  fill=land_bridge),alpha=0.25)+
+  facet_wrap(~herd_number,labeller = as_labeller(strip_labels))+
+  theme_bw(base_size = 18)+
+  labs(color="",fill="",x="Timestep",y="Proportion of goats left habitat")+
+  scale_color_manual(values = colors,labels=leg_labels)+
+  scale_fill_manual(values = colors,labels=leg_labels)+
+  scale_y_continuous(limits = c(-0.05,0.51))+
+  theme(legend.text = element_text(size=18),
+        legend.position = "top",
+        #strip.background = element_blank(),
+        panel.grid = element_blank())
+
+ggsave("./FinalFigures/pp1_PropLhabbyTimestep.png",dpi=300,width=10,height=6)
+
+ggplot(subset(dat_agg,pinchpoint==2), aes(x=timestep,y=prop_lhab))+
+  geom_line(aes(color=land_bridge),alpha=0.5)+
+  geom_ribbon(aes(ymin=prop_lhab-sd_prop_lhab,
+                  ymax=prop_lhab+sd_prop_lhab,
+                  fill=land_bridge),alpha=0.25)+
+  facet_wrap(~herd_number,labeller = as_labeller(strip_labels))+
+  theme_bw(base_size = 18)+
+  labs(color="",fill="",x="Timestep",y="Proportion of goats left habitat")+
+  scale_color_manual(values = colors,labels=leg_labels)+
+  scale_fill_manual(values = colors,labels=leg_labels)+
+  scale_y_continuous(limits = c(-0.05,0.51))+
+  theme(legend.text = element_text(size=18),
+        legend.position = "top",
+        #strip.background = element_blank(),
+        panel.grid = element_blank())
+
+ggsave("./FinalFigures/pp2_PropLhabbyTimestep.png",dpi=300,width=10,height=6)
+
+
+```
+
+
+
+# Regression analyses
+```{r regress}
+dat_all$herd_number <- as.numeric(as.character(dat_all$herd_number))
+summary(dat_all)
+lm_dat <- dat_all %>% 
+  group_by(run_number,pinchpoint,herd_number) %>% 
+  summarize(n_crossings=max(n_crossings),
+            totalgoats=max(totalgoats),
+            prop_crossed = max(n_crossings)/max(totalgoats),
+            deaths=max(deaths),
+            prop_deaths=max(deaths)/totalgoats,
+            left_habitat=max(left_habitat),
+            prop_left_hab=max(left_habitat)/max(totalgoats),
+            land_bridge=land_bridge[1],
+            totalgoats=totalgoats[1],
+            avg_herdsize=mean(totalgoats/as.numeric(as.character(herd_number))))
+
+crossed_lm <- lmer(prop_crossed~land_bridge+totalgoats*herd_number+(1|pinchpoint),data=lm_dat)
+tab_model(crossed_lm,
+          show.ci = F,
+          show.se = T,
+          digits=4,
+          pred.labels = c("Intercept","Land bridge","Total goats", "Herd number","Total goats*herd number"),
+          dv.labels = "Proportion of total goats crossed")
+
+death_lm <- lmer(prop_deaths~n_crossings*land_bridge+totalgoats*herd_number+(1|pinchpoint),data=lm_dat)
+tab_model(death_lm,
+          show.ci = F,
+          show.se = T,
+          digits=4,
+          pred.labels = c("Intercept","Number of crossings","Land bridge",
+                          "Total goats", "Herd number","Number of crossings*Land Bridge","Total goats*herd number"),
+          dv.labels = "Proportion of total goats died")
+
+migration_lm <- lmer(prop_left_hab~n_crossings*land_bridge+totalgoats*herd_number+(1|pinchpoint),data=lm_dat)
+tab_model(migration_lm,
+          show.ci = F,
+          show.se = T,
+          digits = 4,
+          pred.labels = c("Intercept","Number of crossings","Land bridge",
+                          "Total goats", "Herd number","Number of crossings*Land Bridge","Total goats*herd number"),
+          dv.labels = "Proportion of total goats left habitat")
+```
+

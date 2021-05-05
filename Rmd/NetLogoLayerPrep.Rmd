@@ -21,10 +21,10 @@ library(sf)
 new_crs <- "+proj=aea +lat_1=20 +lat_2=60 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
 
 # Read in polygons that we'll use to crop rasters to focal pinchpoints and reproject
-pp1_shp <- read_sf("../Circuitscape/pinchpointcroppolys/pinchpoint1.shp") %>% 
-  st_transform(new_crs)
+# pp1_shp <- read_sf("../Circuitscape/pinchpointcroppolys/pinchpoint1.shp") %>% 
+#   st_transform(new_crs)
 
-pp2_shp <- read_sf("../Circuitscape/pinchpointcroppolys/pinchpoint2.shp") %>% 
+pp3_shp <- read_sf("../Circuitscape/pinchpointcroppolys/pinchpoint3.shp") %>% 
   st_transform(new_crs)
 
 # Read in rasters
@@ -60,6 +60,7 @@ for(i in 1:length(raster_list)){
 rm(ras,corridors,corridors_rpj,pinchpoints,pinchpoints_rpj,resistance,resistance_rpj)
 ```
 
+
 ```{r fill.raster.na}
 fill.na <- function(x, i=5) {
   if(is.na(x)[i]) {
@@ -78,8 +79,7 @@ raster_list2 <- list(corridors=corridors_resample,
                     resistance=resistance_resample)
 
 # Create list of pinchpoints
-pinchpoint_list  <- list(pp1=pp1_shp,
-                         pp2=pp2_shp)
+pinchpoint_list  <- list(pp3=pp3_shp)
 
 # Pinchpoint loop
 for(i in 1:length(pinchpoint_list)) {
@@ -104,8 +104,8 @@ for(i in 1:length(pinchpoint_list)) {
     }
     assign(paste0(pp_name,"_",ras_name),tmp_mask)
     
-    output_tif <- paste0("../GoatRepo/NetLogoInput/",pp_name,"_",ras_name,".tif")
-    output_asc <- paste0("../GoatRepo/NetLogoInput/",pp_name,"_",ras_name,".asc")
+    output_tif <- paste0("../GoatRepo/NetLogoInput/",pp_name,"_",ras_name,"_30.tif")
+    output_asc <- paste0("../GoatRepo/NetLogoInput/",pp_name,"_",ras_name,"_30.asc")
     writeRaster(tmp_mask,output_tif,overwrite=T)
     writeRaster(tmp_mask,output_asc,overwrite=T,format='ascii')
 
@@ -120,14 +120,26 @@ for(i in 1:length(pinchpoint_list)) {
 # Multiply flow/pinchpoint values by 1000 to help with NetLogo value recognition
 ```{r fixFlowVals}
 
-pp1_asc <- raster("./NetLogoInput/pp1_pinchpoints.asc")
-pp1 <- round(pp1_asc*1000,2)
-writeRaster(pp1,"./NetLogoInput/pp1_flow.asc",format="ascii",overwrite=T)
+# pp1_asc <- raster("./NetLogoInput/pp1_pinchpoints.asc")
+# pp1 <- round(pp1_asc*1000,2)
+# writeRaster(pp1,"./NetLogoInput/pp1_flow.asc",format="ascii",overwrite=T)
+# 
+# pp2_asc <- raster("./NetLogoInput/pp2_pinchpoints.asc")
+# pp2 <- round(pp2_asc*1000,2)
+# writeRaster(pp2,"./NetLogoInput/pp2_flow.asc",format="ascii",overwrite=T)
 
-pp2_asc <- raster("./NetLogoInput/pp2_pinchpoints.asc")
-pp2 <- round(pp2_asc*1000,2)
-writeRaster(pp2,"./NetLogoInput/pp2_flow.asc",format="ascii",overwrite=T)
+pp3_30_asc <- raster("./NetLogoInput/pp3_pinchpoints_30.asc")
+pp3_30 <- round(pp3_30_asc*1000,2)
+writeRaster(pp3_30,"./NetLogoInput/pp3_30_flow.asc",format="ascii",overwrite=T)
 
+pp3_60_asc <- raster("./NetLogoInput/pp3_pinchpoints_60.asc")
+pp3_60 <- round(pp3_60_asc*1000,2)
+writeRaster(pp3_60,"./NetLogoInput/pp3_60_flow.asc",format="ascii",overwrite=T)
+
+pp3_90_asc <- raster("./NetLogoInput/pp3_pinchpoints_90.asc")
+pp3_90 <- round(pp3_90_asc*1000,2)
+writeRaster(pp3_90,"./NetLogoInput/pp3_90_flow.asc",format="ascii",overwrite=T)
+dim(pp3_90)
 ```
 
 
