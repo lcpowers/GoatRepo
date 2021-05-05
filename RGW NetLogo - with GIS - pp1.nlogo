@@ -148,8 +148,8 @@ to move  ;; goat procedure
       set heading 0
         ;; becomes false quickly when temp is large -> loop terminates and sets on that heading
         while [ random 1000 + 1 > temp ][
-      rt random 50
-      lt random 50
+      rt random 90
+      lt random 90
       ifelse patch-ahead 1 = nobody [ set temp -1 ]
       [ set temp [ flow ] of patch-ahead 1 ]
       ] ] )
@@ -160,9 +160,16 @@ to move  ;; goat procedure
       move-to one-of link-neighbors
     ]
     )
-  if ([pcolor] of patch-here = 74 and crossed = false and ticks > 10) [
+  ;; Track crossings with bridge
+  if ([pcolor] of patch-here = 74 and crossed = false and ticks > 10 and land_bridge = true) [
     set crossings crossings + 1
     set crossed true]
+
+    ;; Track crossings without land bridge
+  if (sum [flow] of (patch-set patch-here neighbors) > 2500 and crossed = false and land_bridge = false) [
+    set crossings crossings + 1
+    set crossed true
+  ]
   ;; turtles leave habitat to the north
   if abs pycor = max-pycor [
     leave_habitat
@@ -335,7 +342,7 @@ CHOOSER
 color_by
 color_by
 1 2
-0
+1
 
 TEXTBOX
 172
@@ -713,6 +720,71 @@ NetLogo 6.2.0
     </enumeratedValueSet>
     <enumeratedValueSet variable="color_by">
       <value value="2"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="final_runs_10" repetitions="50" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>ticks</metric>
+    <metric>crossings</metric>
+    <metric>N</metric>
+    <metric>deaths</metric>
+    <metric>left_habitat</metric>
+    <enumeratedValueSet variable="number">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="land_bridge">
+      <value value="false"/>
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="color_by">
+      <value value="2"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="final_runs_30" repetitions="15" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>ticks</metric>
+    <metric>crossings</metric>
+    <metric>N</metric>
+    <metric>deaths</metric>
+    <metric>left_habitat</metric>
+    <enumeratedValueSet variable="number">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="land_bridge">
+      <value value="false"/>
+      <value value="true"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="final_runs_50_true_2" repetitions="15" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>ticks</metric>
+    <metric>crossings</metric>
+    <metric>N</metric>
+    <metric>deaths</metric>
+    <metric>left_habitat</metric>
+    <enumeratedValueSet variable="number">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="land_bridge">
+      <value value="true"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="final_runs_50_false_2" repetitions="15" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>ticks</metric>
+    <metric>crossings</metric>
+    <metric>N</metric>
+    <metric>deaths</metric>
+    <metric>left_habitat</metric>
+    <enumeratedValueSet variable="number">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="land_bridge">
+      <value value="false"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>

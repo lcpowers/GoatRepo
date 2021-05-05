@@ -178,8 +178,8 @@ to move  ;; goat procedure
       set heading ( -90 + random 60 )
         ;; becomes false quickly when temp is large -> loop terminates and sets on that heading
         while [ random 1000 + 1 > temp ][
-      rt random 60
-      lt random 60
+      rt random 90
+      lt random 90
       ifelse patch-ahead 1 = nobody [ set temp -1 ]
       [ set temp [ flow ] of patch-ahead 1 ]
       ] ] )
@@ -735,7 +735,7 @@ NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="land_bridge" repetitions="50" runMetricsEveryStep="true">
+  <experiment name="pp2_final_runs" repetitions="50" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
     <metric>ticks</metric>
@@ -744,14 +744,13 @@ NetLogo 6.2.0
     <metric>deaths</metric>
     <metric>left_habitat</metric>
     <enumeratedValueSet variable="number">
+      <value value="10"/>
+      <value value="30"/>
       <value value="50"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="land_bridge">
       <value value="false"/>
       <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="color_by">
-      <value value="2"/>
     </enumeratedValueSet>
   </experiment>
   <experiment name="Apr28overnight" repetitions="1" runMetricsEveryStep="true">
